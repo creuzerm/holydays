@@ -1,0 +1,57 @@
+[
+  {
+    "year": 2004,
+    "feasts": [
+      {
+        "name": "New Year (Rosh Chodesh Nisan)",
+        "expectedDate": "2004-03-21",
+        "expectedDay": "Sunday"
+      },
+      {
+        "name": "Lord's Supper",
+        "expectedDate": "2004-04-03",
+        "expectedDay": "Saturday"
+      },
+      {
+        "name": "Passover / Night To Be Much Observed",
+        "expectedDate": "2004-04-04",
+        "expectedDay": "Sunday"
+      },
+      {
+        "name": "Feast of Unleavened Bread",
+        "expectedDate": "2004-04-04",
+        "expectedDay": "Sunday"
+      },
+      {
+        "name": "Wave Sheaf Offering",
+        "expectedDate": "2004-04-04",
+        "expectedDay": "Sunday"
+      },
+      {
+        "name": "Pentecost (Shavuot)",
+        "expectedDate": "2004-05-23",
+        "expectedDay": "Sunday"
+      },
+      {
+        "name": "Feast of Trumpets (Rosh Hashanah)",
+        "expectedDate": "2004-09-14",
+        "expectedDay": "Tuesday"
+      },
+      {
+        "name": "Day of Atonement (Yom Kippur)",
+        "expectedDate": "2004-09-23",
+        "expectedDay": "Thursday"
+      },
+      {
+        "name": "Feast of Tabernacles (Sukkot)",
+        "expectedDate": "2004-09-28",
+        "expectedDay": "Tuesday"
+      },
+      {
+        "name": "The Last Great Day",
+        "expectedDate": "2004-10-05",
+        "expectedDay": "Tuesday"
+      }
+    ]
+  }
+]
