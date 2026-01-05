@@ -1,0 +1,24 @@
+{
+  "name": "app",
+  "version": "1.0.0",
+  "description": "Biblical Feast Calculator",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/creuzerm/holydays.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/creuzerm/holydays/issues"
+  },
+  "homepage": "https://github.com/creuzerm/holydays#readme",
+  "dependencies": {
+    "astronomy-engine": "^2.1.19"
+  }
+}
