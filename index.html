@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Biblical Feast Calculator</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Astronomy Engine -->
+    <script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.0.0/astronomy.browser.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lato:wght@400;700&display=swap');
+        
+        body {
+            font-family: 'Lato', sans-serif;
+            background-color: #f3f4f6;
+        }
+        
+        h1, h2, .biblical-font {
+            font-family: 'Cinzel', serif;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Toggle Switch Styling */
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #1e3a8a; /* blue-900 */
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #1e3a8a; /* blue-900 */
+        }
+    </style>
+</head>
+<body class="min-h-screen text-gray-800">
+
+    <!-- Header -->
+    <header class="bg-blue-900 text-white p-6 shadow-lg border-b-4 border-yellow-600">
+        <div class="max-w-6xl mx-auto text-center">
+            <h1 class="text-3xl md:text-5xl font-bold mb-2 text-yellow-500">Biblical Feast Calculator</h1>
+            <p class="text-blue-200 italic">Based on Astronomical Vernal Equinox & Conjunctions</p>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto p-4 md:p-8">
+        
+        <!-- Controls -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8 max-w-xl mx-auto border border-gray-200">
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="yearInput">
+                    Enter Gregorian Year
+                </label>
+                <div class="flex gap-4">
+                    <input type="number" id="yearInput" placeholder="e.g. 2024" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition" value="2004">
+                    <button onclick="calculateFeasts()" class="bg-blue-800 hover:bg-blue-900 text-white font-bold py-2 px-6 rounded focus:outline-none focus:shadow-outline transition duration-300 border border-blue-950">
+                        Calculate
+                    </button>
+                </div>
+            </div>
+
+            <!-- View Settings -->
+            <div class="flex items-center justify-between bg-blue-50 p-3 rounded border border-blue-100">
+                <span class="text-sm font-semibold text-blue-900">Time Zone View:</span>
+                <div class="flex items-center">
+                    <label class="mr-2 text-sm text-gray-600" id="tzLabelJerusalem">Jerusalem</label>
+                    <div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+                        <input type="checkbox" name="toggle" id="tzToggle" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-300" onclick="renderTable()"/>
+                        <label for="tzToggle" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
+                    </div>
+                    <label class="text-sm text-gray-600 font-bold" id="tzLabelLocal">Local</label>
+                </div>
+            </div>
+            <p class="text-xs text-gray-500 mt-2 text-center">Note: Date determination is <strong>always</strong> based on Jerusalem calculation. This toggle only affects displayed times.</p>
+        </div>
+
+        <!-- Results Section -->
+        <div id="resultsContainer" class="hidden fade-in">
+            <div class="bg-white rounded-lg shadow-xl overflow-hidden border border-gray-300">
+                <div class="bg-gray-100 p-4 border-b border-gray-300 flex justify-between items-center">
+                    <h2 class="text-xl font-bold text-gray-800" id="resultsTitle">Feasts for Year</h2>
+                    <span class="text-xs font-mono bg-blue-100 text-blue-800 py-1 px-2 rounded">Astronomy Engine</span>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-blue-50 text-blue-900 text-sm uppercase tracking-wider">
+                                <th class="p-4 border-b border-blue-200 w-1/5">Feast Name</th>
+                                <th class="p-4 border-b border-blue-200 w-1/5">Gregorian Date<br><span class="text-xs font-normal text-gray-500">(Calculated for Jerusalem)</span></th>
+                                <th class="p-4 border-b border-blue-200 w-1/6">Biblical Date</th>
+                                <th class="p-4 border-b border-blue-200 w-1/3">Demonstration / Logic<br><span class="text-xs font-normal text-gray-500" id="logicHeaderTZ">(Jerusalem Time)</span></th>
+                                <th class="p-4 border-b border-blue-200 w-1/6">Scripture</th>
+                            </tr>
+                        </thead>
+                        <tbody id="feastTableBody" class="text-sm">
+                            <!-- Rows inserted via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Logic Explanation Footer -->
+        <div class="mt-8 text-center text-gray-500 text-sm max-w-4xl mx-auto">
+            <p class="mb-2"><strong>Calculation Methodology:</strong></p>
+            <p>1 Nisan is determined by the New Moon conjunction nearest to the Vernal Equinox (closest in time, whether before or after). All dates are calculated based on Jerusalem time. Biblical days begin at the preceding sundown.</p>
+        </div>
+
+    </main>
+
+    <script>
+        // --- Global State ---
+        let currentFeastData = [];
+
+        // --- Configuration & Helpers ---
+        
+        // Use Intl API for robust timezone handling
+        function formatDateTime(date, timeZone) {
+            if (!date) return "N/A";
+            const options = { 
+                year: 'numeric', month: 'short', day: 'numeric', 
+                hour: '2-digit', minute: '2-digit', second: '2-digit',
+                timeZone: timeZone,
+                timeZoneName: 'short'
+            };
+            return new Intl.DateTimeFormat('en-US', options).format(date);
+        }
+
+        // Returns a string representing the Date in Jerusalem (used for determining Day 1)
+        function getJerusalemDateObject(dateObj) {
+            // We use Intl to find out what Year-Month-Day it is in Jerusalem at that exact moment
+            const options = { timeZone: 'Asia/Jerusalem', year: 'numeric', month: 'numeric', day: 'numeric' };
+            const parts = new Intl.DateTimeFormat('en-US', options).formatToParts(dateObj);
+            const y = parts.find(p => p.type === 'year').value;
+            const m = parts.find(p => p.type === 'month').value;
+            const d = parts.find(p => p.type === 'day').value;
+            return new Date(y, m - 1, d); // Return a local date object representing that day (00:00:00)
+        }
+
+        // Display formatting for the Feast Table (Gregorian Date Column)
+        function formatFeastDate(dateObj) {
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            return dateObj.toLocaleDateString('en-US', options);
+        }
+
+        function formatShortFeastDate(dateObj) {
+            const options = { month: 'short', day: 'numeric' };
+            return dateObj.toLocaleDateString('en-US', options);
+        }
+        
+        function addDays(date, days) {
+            const result = new Date(date);
+            result.setDate(result.getDate() + days);
+            return result;
+        }
+
+        // --- Core Calculation Logic ---
+
+        function calculateFeasts() {
+            const yearStr = document.getElementById('yearInput').value;
+            const year = parseInt(yearStr);
+            
+            if (isNaN(year) || year < 1) {
+                alert("Please enter a valid year.");
+                return;
+            }
+
+            document.getElementById('resultsTitle').textContent = `Biblical Feasts for Gregorian Year ${year}`;
+            
+            // 1. Calculate Vernal Equinox
+            const equinox = Astronomy.Seasons(year).mar_equinox;
+            const equinoxDate = equinox.date;
+            
+            // 2. Find Closest New Moon to Equinox
+            // Search window: 25 days before to 25 days after equinox
+            const searchStart = new Date(equinoxDate);
+            searchStart.setDate(searchStart.getDate() - 25);
+            
+            const nm1 = Astronomy.SearchMoonPhase(0, searchStart, 30); // Moon Before or At
+            const nm2 = Astronomy.SearchMoonPhase(0, nm1.date, 30); // Next Moon
+
+            // Calculate differences in Milliseconds
+            const diff1 = Math.abs(nm1.date - equinoxDate);
+            const diff2 = Math.abs(nm2.date - equinoxDate);
+
+            let nisan1Conjunction;
+            const diff1Hours = (diff1 / 36e5).toFixed(1);
+            const diff2Hours = (diff2 / 36e5).toFixed(1);
+
+            // Logic Object to store raw data for dynamic rendering later
+            const logicData = {
+                equinox: equinoxDate,
+                nm1: nm1.date,
+                nm2: nm2.date,
+                diff1: diff1Hours,
+                diff2: diff2Hours,
+                chosen: null // 'prev' or 'next'
+            };
+
+            if (diff1 <= diff2) {
+                nisan1Conjunction = nm1;
+                logicData.chosen = 'prev';
+            } else {
+                nisan1Conjunction = nm2;
+                logicData.chosen = 'next';
+            }
+
+            // Determine the "Day" of 1 Nisan based on Jerusalem Conjunction Time
+            const nisan1ConjunctionDate = new Date(nisan1Conjunction.date);
+            const nisan1JerusalemDate = getJerusalemDateObject(nisan1ConjunctionDate);
+
+            // --- Generate Row Data ---
+            const rows = [];
+
+            // 1. New Year (1 Nisan)
+            rows.push({
+                name: "New Year (Rosh Chodesh Nisan)",
+                dateObj: nisan1JerusalemDate,
+                endDateObj: null, // For single days
+                bDate: "1 Nisan",
+                logicType: "equinox", // Custom type for renderer
+                logicData: logicData,
+                verse: "Exodus 12:2, Deut 16:1"
+            });
+
+            // 2. Lord's Supper (14 Nisan - Evening of)
+            const nisan14 = addDays(nisan1JerusalemDate, 13);
+            rows.push({
+                name: "Lord's Supper",
+                dateObj: nisan14,
+                bDate: "14 Nisan (Evening)",
+                logicType: "simple",
+                logicText: `Count 14 days from 1 Nisan. Observed the evening prior (start of 14th).`,
+                verse: "Leviticus 23:5"
+            });
+
+            // 3. Passover / NTBMO (15 Nisan)
+            const nisan15 = addDays(nisan1JerusalemDate, 14);
+            rows.push({
+                name: "Passover / Night To Be Much Observed",
+                dateObj: nisan15,
+                bDate: "15 Nisan",
+                logicType: "simple",
+                logicText: `Count 15 days from 1 Nisan. Beginning of Unleavened Bread.`,
+                verse: "Leviticus 23:6"
+            });
+
+            // 4. Feast of Unleavened Bread (15-21 Nisan)
+            const nisan21 = addDays(nisan1JerusalemDate, 20);
+            rows.push({
+                name: "Feast of Unleavened Bread",
+                dateObj: nisan15,
+                endDateObj: nisan21,
+                bDate: "15 Nisan – 21 Nisan",
+                logicType: "simple",
+                logicText: `Seven days starting from 15 Nisan.`,
+                verse: "Leviticus 23:6-8"
+            });
+
+            // 5. Wave Sheaf Offering (First Sunday on or after 15 Nisan)
+            let waveSheafDate = new Date(nisan15);
+            while (waveSheafDate.getDay() !== 0) { // 0 is Sunday
+                waveSheafDate.setDate(waveSheafDate.getDate() + 1);
+            }
+            
+            let wsLogic = "";
+            if (waveSheafDate.getTime() === nisan15.getTime()) {
+                wsLogic = "15 Nisan falls on a Sunday.";
+            } else {
+                // Calculate diff
+                const diff = Math.round((waveSheafDate - nisan15) / (1000 * 60 * 60 * 24));
+                wsLogic = `15 Nisan is ${formatFeastDate(nisan15).split(',')[0]}. Next Sunday is +${diff} days.`;
+            }
+
+            rows.push({
+                name: "Wave Sheaf Offering",
+                dateObj: waveSheafDate,
+                bDate: "First Sunday of ULB",
+                logicType: "simple",
+                logicText: `${wsLogic} The Morrow after the Sabbath.`,
+                verse: "Leviticus 23:10-11"
+            });
+
+            // 6. Pentecost (50 Days)
+            const pentecost = addDays(waveSheafDate, 49);
+            rows.push({
+                name: "Pentecost (Shavuot)",
+                dateObj: pentecost,
+                bDate: "Variable (Sivan)",
+                logicType: "simple",
+                logicText: `Count exactly 50 days from Wave Sheaf Sunday. Target is always a Sunday.`,
+                verse: "Leviticus 23:15-16"
+            });
+
+            // 7. Trumpets (1 Tishri)
+            let currentMoon = nisan1Conjunction;
+            for(let i=0; i<6; i++) {
+                // CRITICAL FIX: Add buffer to ensure we find the *next* moon, not the current one.
+                const searchFrom = new Date(currentMoon.date);
+                searchFrom.setDate(searchFrom.getDate() + 5); 
+                currentMoon = Astronomy.SearchMoonPhase(0, searchFrom, 35);
+            }
+            const tishri1Conjunction = currentMoon;
+            const tishri1Date = new Date(tishri1Conjunction.date);
+            const tishri1JerusalemDate = getJerusalemDateObject(tishri1Date);
+
+            rows.push({
+                name: "Feast of Trumpets (Rosh Hashanah)",
+                dateObj: tishri1JerusalemDate,
+                bDate: "1 Tishri",
+                logicType: "moon",
+                logicData: { moon: tishri1Date },
+                logicText: "7th New Moon Conjunction (6 lunations after Nisan 1).",
+                verse: "Leviticus 23:24"
+            });
+
+            // 8. Atonement (10 Tishri)
+            const tishri10 = addDays(tishri1JerusalemDate, 9);
+            rows.push({
+                name: "Day of Atonement (Yom Kippur)",
+                dateObj: tishri10,
+                bDate: "10 Tishri",
+                logicType: "simple",
+                logicText: `1 Tishri + 9 days.`,
+                verse: "Leviticus 23:27"
+            });
+
+            // 9. Tabernacles (15 Tishri)
+            const tishri15 = addDays(tishri1JerusalemDate, 14);
+            const tishri21 = addDays(tishri1JerusalemDate, 20);
+            rows.push({
+                name: "Feast of Tabernacles (Sukkot)",
+                dateObj: tishri15,
+                endDateObj: tishri21,
+                bDate: "15 Tishri – 21 Tishri",
+                logicType: "simple",
+                logicText: `Seven days starting 15 Tishri.`,
+                verse: "Leviticus 23:34"
+            });
+
+            // 10. Last Great Day (22 Tishri)
+            const tishri22 = addDays(tishri1JerusalemDate, 21);
+            rows.push({
+                name: "The Last Great Day",
+                dateObj: tishri22,
+                bDate: "22 Tishri",
+                logicType: "simple",
+                logicText: `The day immediately following Tabernacles.`,
+                verse: "Leviticus 23:36"
+            });
+
+            // Save to Global State
+            currentFeastData = rows;
+            
+            // Initial Render
+            document.getElementById('resultsContainer').classList.remove('hidden');
+            renderTable();
+        }
+
+        // --- Rendering Logic ---
+
+        function renderTable() {
+            if (!currentFeastData || currentFeastData.length === 0) return;
+
+            const isLocal = document.getElementById('tzToggle').checked;
+            const timeZone = isLocal ? undefined : 'Asia/Jerusalem'; // undefined uses browser default
+            const tzName = isLocal ? "Local Time" : "Jerusalem Time";
+
+            // Update Header
+            document.getElementById('logicHeaderTZ').textContent = `(${tzName})`;
+            
+            // Toggle Labels Styling
+            const labelJerusalem = document.getElementById('tzLabelJerusalem');
+            const labelLocal = document.getElementById('tzLabelLocal');
+            if (isLocal) {
+                labelLocal.classList.add('font-bold', 'text-blue-900');
+                labelLocal.classList.remove('text-gray-600');
+                labelJerusalem.classList.remove('font-bold', 'text-blue-900');
+                labelJerusalem.classList.add('text-gray-600');
+            } else {
+                labelJerusalem.classList.add('font-bold', 'text-blue-900');
+                labelJerusalem.classList.remove('text-gray-600');
+                labelLocal.classList.remove('font-bold', 'text-blue-900');
+                labelLocal.classList.add('text-gray-600');
+            }
+
+            const tableBody = document.getElementById('feastTableBody');
+            tableBody.innerHTML = '';
+
+            currentFeastData.forEach((row, index) => {
+                const tr = document.createElement('tr');
+                tr.className = index % 2 === 0 ? "bg-white hover:bg-gray-50 transition" : "bg-gray-50 hover:bg-gray-100 transition";
+                
+                // Format Gregorian Date
+                let gDateStr = formatFeastDate(row.dateObj);
+                if (row.endDateObj) {
+                    gDateStr = `${formatShortFeastDate(row.dateObj)} – ${formatShortFeastDate(row.endDateObj)}`;
+                }
+
+                // Format Logic Column
+                let logicHtml = "";
+                
+                if (row.logicType === "equinox") {
+                    const d = row.logicData;
+                    logicHtml = `
+                        <div class="space-y-1">
+                            <div><span class="font-semibold text-gray-700">Vernal Equinox:</span> ${formatDateTime(d.equinox, timeZone)}</div>
+                            <div class="${d.chosen === 'prev' ? 'text-green-700 font-bold bg-green-50 p-1 rounded' : 'text-gray-500'}">
+                                <span>Prev Moon:</span> ${formatDateTime(d.nm1, timeZone)} <span class="text-xs">(${d.diff1} hrs)</span>
+                            </div>
+                            <div class="${d.chosen === 'next' ? 'text-green-700 font-bold bg-green-50 p-1 rounded' : 'text-gray-500'}">
+                                <span>Next Moon:</span> ${formatDateTime(d.nm2, timeZone)} <span class="text-xs">(${d.diff2} hrs)</span>
+                            </div>
+                            <div class="text-xs italic mt-1 text-blue-800">Result: ${d.chosen === 'prev' ? 'Previous' : 'Next'} moon is closer.</div>
+                        </div>
+                    `;
+                } else if (row.logicType === "moon") {
+                    logicHtml = `
+                        <div>${row.logicText}</div>
+                        <div class="mt-1 font-mono text-xs bg-gray-100 p-1 rounded inline-block">
+                            ${formatDateTime(row.logicData.moon, timeZone)}
+                        </div>
+                    `;
+                } else {
+                    logicHtml = row.logicText;
+                }
+
+                tr.innerHTML = `
+                    <td class="p-4 font-bold text-gray-800 border-b border-gray-200">${row.name}</td>
+                    <td class="p-4 font-mono text-blue-700 border-b border-gray-200 whitespace-nowrap">${gDateStr}</td>
+                    <td class="p-4 italic text-gray-600 border-b border-gray-200 whitespace-nowrap">${row.bDate}</td>
+                    <td class="p-4 text-sm text-gray-600 border-b border-gray-200">${logicHtml}</td>
+                    <td class="p-4 text-xs font-semibold text-gray-500 border-b border-gray-200 bg-yellow-50">${row.verse}</td>
+                `;
+                tableBody.appendChild(tr);
+            });
+        }
+    </script>
+</body>
+</html>
