@@ -37,6 +37,19 @@
         .toggle-checkbox:checked + .toggle-label {
             background-color: #1e3a8a; /* blue-900 */
         }
+
+        /* Tab Styling */
+        .tab-active {
+            border-bottom: 4px solid #ca8a04; /* yellow-600 */
+            color: #1e3a8a; /* blue-900 */
+            font-weight: bold;
+        }
+        .tab-inactive {
+            color: #6b7280; /* gray-500 */
+        }
+        .tab-inactive:hover {
+            color: #1e3a8a;
+        }
     </style>
 </head>
 <body class="min-h-screen text-gray-800">
@@ -51,59 +64,122 @@
 
     <!-- Main Content -->
     <main class="max-w-7xl mx-auto p-4 md:p-8">
+
+        <!-- Navigation Tabs -->
+        <div class="flex justify-center mb-8 border-b border-gray-300">
+            <button onclick="switchTab('yearly')" id="tabYearly" class="tab-active px-6 py-3 text-lg focus:outline-none transition-colors duration-200">
+                Yearly Details
+            </button>
+            <button onclick="switchTab('century')" id="tabCentury" class="tab-inactive px-6 py-3 text-lg focus:outline-none transition-colors duration-200">
+                Century View
+            </button>
+        </div>
         
-        <!-- Controls -->
-        <div class="bg-white rounded-lg shadow-md p-6 mb-8 max-w-xl mx-auto border border-gray-200">
-            <div class="mb-4">
-                <label class="block text-gray-700 text-sm font-bold mb-2" for="yearInput">
-                    Enter Gregorian Year
-                </label>
-                <div class="flex gap-4">
-                    <input type="number" id="yearInput" placeholder="e.g. 2024" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition" value="2004">
-                    <button onclick="calculateFeasts()" class="bg-blue-800 hover:bg-blue-900 text-white font-bold py-2 px-6 rounded focus:outline-none focus:shadow-outline transition duration-300 border border-blue-950">
-                        Calculate
-                    </button>
+        <!-- YEARLY VIEW CONTAINER -->
+        <div id="viewYearly" class="fade-in">
+            <!-- Controls -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-8 max-w-xl mx-auto border border-gray-200">
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="yearInput">
+                        Enter Gregorian Year
+                    </label>
+                    <div class="flex gap-4">
+                        <input type="number" id="yearInput" placeholder="e.g. 2025" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition">
+                        <button onclick="calculateFeasts()" class="bg-blue-800 hover:bg-blue-900 text-white font-bold py-2 px-6 rounded focus:outline-none focus:shadow-outline transition duration-300 border border-blue-950">
+                            Calculate
+                        </button>
+                    </div>
                 </div>
+
+                <!-- View Settings -->
+                <div class="flex items-center justify-between bg-blue-50 p-3 rounded border border-blue-100">
+                    <span class="text-sm font-semibold text-blue-900">Time Zone View:</span>
+                    <div class="flex items-center">
+                        <label class="mr-2 text-sm text-gray-600" id="tzLabelJerusalem">Jerusalem</label>
+                        <div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+                            <input type="checkbox" name="toggle" id="tzToggle" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-300" onclick="renderTable()"/>
+                            <label for="tzToggle" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
+                        </div>
+                        <label class="text-sm text-gray-600 font-bold" id="tzLabelLocal">Local</label>
+                    </div>
+                </div>
+                <p class="text-xs text-gray-500 mt-2 text-center">Note: Date determination is <strong>always</strong> based on Jerusalem calculation. This toggle only affects displayed times.</p>
             </div>
 
-            <!-- View Settings -->
-            <div class="flex items-center justify-between bg-blue-50 p-3 rounded border border-blue-100">
-                <span class="text-sm font-semibold text-blue-900">Time Zone View:</span>
-                <div class="flex items-center">
-                    <label class="mr-2 text-sm text-gray-600" id="tzLabelJerusalem">Jerusalem</label>
-                    <div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
-                        <input type="checkbox" name="toggle" id="tzToggle" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-300" onclick="renderTable()"/>
-                        <label for="tzToggle" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
+            <!-- Results Section -->
+            <div id="resultsContainer" class="hidden">
+                <div class="bg-white rounded-lg shadow-xl overflow-hidden border border-gray-300">
+                    <div class="bg-gray-100 p-4 border-b border-gray-300 flex justify-between items-center">
+                        <h2 class="text-xl font-bold text-gray-800" id="resultsTitle">Feasts for Year</h2>
+                        <span class="text-xs font-mono bg-blue-100 text-blue-800 py-1 px-2 rounded">Astronomy Engine</span>
                     </div>
-                    <label class="text-sm text-gray-600 font-bold" id="tzLabelLocal">Local</label>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-blue-50 text-blue-900 text-sm uppercase tracking-wider">
+                                    <th class="p-4 border-b border-blue-200 w-1/5">Feast Name</th>
+                                    <th class="p-4 border-b border-blue-200 w-1/5">Gregorian Date<br><span class="text-xs font-normal text-gray-500">(Calculated for Jerusalem)</span></th>
+                                    <th class="p-4 border-b border-blue-200 w-1/6">Biblical Date</th>
+                                    <th class="p-4 border-b border-blue-200 w-1/3">Demonstration / Logic<br><span class="text-xs font-normal text-gray-500" id="logicHeaderTZ">(Jerusalem Time)</span></th>
+                                    <th class="p-4 border-b border-blue-200 w-1/6">Scripture</th>
+                                </tr>
+                            </thead>
+                            <tbody id="feastTableBody" class="text-sm">
+                                <!-- Rows inserted via JS -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
-            <p class="text-xs text-gray-500 mt-2 text-center">Note: Date determination is <strong>always</strong> based on Jerusalem calculation. This toggle only affects displayed times.</p>
         </div>
 
-        <!-- Results Section -->
-        <div id="resultsContainer" class="hidden fade-in">
-            <div class="bg-white rounded-lg shadow-xl overflow-hidden border border-gray-300">
-                <div class="bg-gray-100 p-4 border-b border-gray-300 flex justify-between items-center">
-                    <h2 class="text-xl font-bold text-gray-800" id="resultsTitle">Feasts for Year</h2>
-                    <span class="text-xs font-mono bg-blue-100 text-blue-800 py-1 px-2 rounded">Astronomy Engine</span>
+        <!-- CENTURY VIEW CONTAINER -->
+        <div id="viewCentury" class="hidden fade-in">
+            <!-- Controls -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-8 max-w-2xl mx-auto border border-gray-200">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="centuryFeastSelect">
+                            Select Feast Day
+                        </label>
+                        <select id="centuryFeastSelect" class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:border-blue-500 bg-white">
+                            <!-- Populated by JS -->
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="centuryStartYear">
+                            Start Year
+                        </label>
+                        <input type="number" id="centuryStartYear" placeholder="e.g. 2000" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:border-blue-500">
+                    </div>
                 </div>
-                
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
-                        <thead>
-                            <tr class="bg-blue-50 text-blue-900 text-sm uppercase tracking-wider">
-                                <th class="p-4 border-b border-blue-200 w-1/5">Feast Name</th>
-                                <th class="p-4 border-b border-blue-200 w-1/5">Gregorian Date<br><span class="text-xs font-normal text-gray-500">(Calculated for Jerusalem)</span></th>
-                                <th class="p-4 border-b border-blue-200 w-1/6">Biblical Date</th>
-                                <th class="p-4 border-b border-blue-200 w-1/3">Demonstration / Logic<br><span class="text-xs font-normal text-gray-500" id="logicHeaderTZ">(Jerusalem Time)</span></th>
-                                <th class="p-4 border-b border-blue-200 w-1/6">Scripture</th>
-                            </tr>
-                        </thead>
-                        <tbody id="feastTableBody" class="text-sm">
-                            <!-- Rows inserted via JS -->
-                        </tbody>
-                    </table>
+                <button onclick="calculateCentury()" class="w-full bg-blue-800 hover:bg-blue-900 text-white font-bold py-2 px-6 rounded focus:outline-none focus:shadow-outline transition duration-300 border border-blue-950">
+                    Generate Century List
+                </button>
+            </div>
+
+            <!-- Century Results -->
+            <div id="centuryResultsContainer" class="hidden">
+                 <div class="bg-white rounded-lg shadow-xl overflow-hidden border border-gray-300 max-w-3xl mx-auto">
+                    <div class="bg-gray-100 p-4 border-b border-gray-300">
+                        <h2 class="text-xl font-bold text-gray-800" id="centuryResultsTitle">Century View</h2>
+                    </div>
+                    <div class="overflow-x-auto">
+                         <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-blue-50 text-blue-900 text-sm uppercase tracking-wider">
+                                    <th class="p-4 border-b border-blue-200">Year</th>
+                                    <th class="p-4 border-b border-blue-200">Gregorian Date (Jerusalem)</th>
+                                    <th class="p-4 border-b border-blue-200">Day of Week</th>
+                                    <th class="p-4 border-b border-blue-200">Biblical Date</th>
+                                </tr>
+                            </thead>
+                            <tbody id="centuryTableBody" class="text-sm">
+                                <!-- Rows inserted via JS -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -120,9 +196,60 @@
         // --- Global State ---
         let currentFeastData = [];
 
+        // --- Feast Definitions for Dropdown ---
+        const FEAST_OPTS = [
+            "New Year (Rosh Chodesh Nisan)",
+            "Lord's Supper",
+            "Passover / Night To Be Much Observed",
+            "Feast of Unleavened Bread",
+            "Wave Sheaf Offering",
+            "Pentecost (Shavuot)",
+            "Feast of Trumpets (Rosh Hashanah)",
+            "Day of Atonement (Yom Kippur)",
+            "Feast of Tabernacles (Sukkot)",
+            "The Last Great Day"
+        ];
+
+        // --- Init ---
+        window.onload = function() {
+            // Default years to current year
+            const currentYear = new Date().getFullYear();
+            document.getElementById('yearInput').value = currentYear;
+            document.getElementById('centuryStartYear').value = currentYear;
+
+            // Populate Dropdown
+            const select = document.getElementById('centuryFeastSelect');
+            FEAST_OPTS.forEach(f => {
+                const opt = document.createElement('option');
+                opt.value = f;
+                opt.textContent = f;
+                if (f.includes("Tabernacles")) opt.selected = true; // Default as requested
+                select.appendChild(opt);
+            });
+        };
+
+        // --- Tab Switching ---
+        function switchTab(tab) {
+            const viewYearly = document.getElementById('viewYearly');
+            const viewCentury = document.getElementById('viewCentury');
+            const tabYearly = document.getElementById('tabYearly');
+            const tabCentury = document.getElementById('tabCentury');
+
+            if (tab === 'yearly') {
+                viewYearly.classList.remove('hidden');
+                viewCentury.classList.add('hidden');
+                tabYearly.className = "tab-active px-6 py-3 text-lg focus:outline-none transition-colors duration-200";
+                tabCentury.className = "tab-inactive px-6 py-3 text-lg focus:outline-none transition-colors duration-200";
+            } else {
+                viewYearly.classList.add('hidden');
+                viewCentury.classList.remove('hidden');
+                tabYearly.className = "tab-inactive px-6 py-3 text-lg focus:outline-none transition-colors duration-200";
+                tabCentury.className = "tab-active px-6 py-3 text-lg focus:outline-none transition-colors duration-200";
+            }
+        }
+
         // --- Configuration & Helpers ---
         
-        // Use Intl API for robust timezone handling
         function formatDateTime(date, timeZone) {
             if (!date) return "N/A";
             const options = { 
@@ -134,20 +261,22 @@
             return new Intl.DateTimeFormat('en-US', options).format(date);
         }
 
-        // Returns a string representing the Date in Jerusalem (used for determining Day 1)
         function getJerusalemDateObject(dateObj) {
-            // We use Intl to find out what Year-Month-Day it is in Jerusalem at that exact moment
             const options = { timeZone: 'Asia/Jerusalem', year: 'numeric', month: 'numeric', day: 'numeric' };
             const parts = new Intl.DateTimeFormat('en-US', options).formatToParts(dateObj);
             const y = parts.find(p => p.type === 'year').value;
             const m = parts.find(p => p.type === 'month').value;
             const d = parts.find(p => p.type === 'day').value;
-            return new Date(y, m - 1, d); // Return a local date object representing that day (00:00:00)
+            return new Date(y, m - 1, d);
         }
 
-        // Display formatting for the Feast Table (Gregorian Date Column)
         function formatFeastDate(dateObj) {
             const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            return dateObj.toLocaleDateString('en-US', options);
+        }
+        
+        function formatCenturyDate(dateObj) {
+            const options = { month: 'short', day: 'numeric' };
             return dateObj.toLocaleDateString('en-US', options);
         }
 
@@ -162,25 +291,13 @@
             return result;
         }
 
-        // --- Core Calculation Logic ---
-
-        function calculateFeasts() {
-            const yearStr = document.getElementById('yearInput').value;
-            const year = parseInt(yearStr);
-            
-            if (isNaN(year) || year < 1) {
-                alert("Please enter a valid year.");
-                return;
-            }
-
-            document.getElementById('resultsTitle').textContent = `Biblical Feasts for Gregorian Year ${year}`;
-            
+        // --- Core Calculation Logic (Extracted) ---
+        function getFeastsForYear(year) {
             // 1. Calculate Vernal Equinox
             const equinox = Astronomy.Seasons(year).mar_equinox;
             const equinoxDate = equinox.date;
             
             // 2. Find Closest New Moon to Equinox
-            // Search window: 25 days before to 25 days after equinox
             const searchStart = new Date(equinoxDate);
             searchStart.setDate(searchStart.getDate() - 25);
             
@@ -195,14 +312,13 @@
             const diff1Hours = (diff1 / 36e5).toFixed(1);
             const diff2Hours = (diff2 / 36e5).toFixed(1);
 
-            // Logic Object to store raw data for dynamic rendering later
             const logicData = {
                 equinox: equinoxDate,
                 nm1: nm1.date,
                 nm2: nm2.date,
                 diff1: diff1Hours,
                 diff2: diff2Hours,
-                chosen: null // 'prev' or 'next'
+                chosen: null
             };
 
             if (diff1 <= diff2) {
@@ -224,9 +340,9 @@
             rows.push({
                 name: "New Year (Rosh Chodesh Nisan)",
                 dateObj: nisan1JerusalemDate,
-                endDateObj: null, // For single days
+                endDateObj: null,
                 bDate: "1 Nisan",
-                logicType: "equinox", // Custom type for renderer
+                logicType: "equinox",
                 logicData: logicData,
                 verse: "Exodus 12:2, Deut 16:1"
             });
@@ -265,7 +381,7 @@
                 verse: "Leviticus 23:6-8"
             });
 
-            // 5. Wave Sheaf Offering (First Sunday on or after 15 Nisan)
+            // 5. Wave Sheaf Offering
             let waveSheafDate = new Date(nisan15);
             while (waveSheafDate.getDay() !== 0) { // 0 is Sunday
                 waveSheafDate.setDate(waveSheafDate.getDate() + 1);
@@ -275,7 +391,6 @@
             if (waveSheafDate.getTime() === nisan15.getTime()) {
                 wsLogic = "15 Nisan falls on a Sunday.";
             } else {
-                // Calculate diff
                 const diff = Math.round((waveSheafDate - nisan15) / (1000 * 60 * 60 * 24));
                 wsLogic = `15 Nisan is ${formatFeastDate(nisan15).split(',')[0]}. Next Sunday is +${diff} days.`;
             }
@@ -289,7 +404,7 @@
                 verse: "Leviticus 23:10-11"
             });
 
-            // 6. Pentecost (50 Days)
+            // 6. Pentecost
             const pentecost = addDays(waveSheafDate, 49);
             rows.push({
                 name: "Pentecost (Shavuot)",
@@ -303,7 +418,7 @@
             // 7. Trumpets (1 Tishri)
             let currentMoon = nisan1Conjunction;
             for(let i=0; i<6; i++) {
-                // CRITICAL FIX: Add buffer to ensure we find the *next* moon, not the current one.
+                // Buffer to find next lunation
                 const searchFrom = new Date(currentMoon.date);
                 searchFrom.setDate(searchFrom.getDate() + 5); 
                 currentMoon = Astronomy.SearchMoonPhase(0, searchFrom, 35);
@@ -357,27 +472,39 @@
                 verse: "Leviticus 23:36"
             });
 
-            // Save to Global State
-            currentFeastData = rows;
+            return rows;
+        }
+
+        // --- Functions for Yearly View ---
+
+        function calculateFeasts() {
+            const yearStr = document.getElementById('yearInput').value;
+            const year = parseInt(yearStr);
             
-            // Initial Render
+            if (isNaN(year) || year < 1) {
+                alert("Please enter a valid year.");
+                return;
+            }
+
+            document.getElementById('resultsTitle').textContent = `Biblical Feasts for Gregorian Year ${year}`;
+            
+            // Calc
+            currentFeastData = getFeastsForYear(year);
+            
+            // Render
             document.getElementById('resultsContainer').classList.remove('hidden');
             renderTable();
         }
-
-        // --- Rendering Logic ---
 
         function renderTable() {
             if (!currentFeastData || currentFeastData.length === 0) return;
 
             const isLocal = document.getElementById('tzToggle').checked;
-            const timeZone = isLocal ? undefined : 'Asia/Jerusalem'; // undefined uses browser default
+            const timeZone = isLocal ? undefined : 'Asia/Jerusalem'; 
             const tzName = isLocal ? "Local Time" : "Jerusalem Time";
 
-            // Update Header
+            // UI Updates
             document.getElementById('logicHeaderTZ').textContent = `(${tzName})`;
-            
-            // Toggle Labels Styling
             const labelJerusalem = document.getElementById('tzLabelJerusalem');
             const labelLocal = document.getElementById('tzLabelLocal');
             if (isLocal) {
@@ -399,15 +526,12 @@
                 const tr = document.createElement('tr');
                 tr.className = index % 2 === 0 ? "bg-white hover:bg-gray-50 transition" : "bg-gray-50 hover:bg-gray-100 transition";
                 
-                // Format Gregorian Date
                 let gDateStr = formatFeastDate(row.dateObj);
                 if (row.endDateObj) {
                     gDateStr = `${formatShortFeastDate(row.dateObj)} – ${formatShortFeastDate(row.endDateObj)}`;
                 }
 
-                // Format Logic Column
                 let logicHtml = "";
-                
                 if (row.logicType === "equinox") {
                     const d = row.logicData;
                     logicHtml = `
@@ -442,6 +566,53 @@
                 `;
                 tableBody.appendChild(tr);
             });
+        }
+
+        // --- Functions for Century View ---
+
+        function calculateCentury() {
+            const startYearStr = document.getElementById('centuryStartYear').value;
+            const startYear = parseInt(startYearStr);
+            const selectedFeast = document.getElementById('centuryFeastSelect').value;
+
+            if (isNaN(startYear)) {
+                alert("Please enter a valid start year.");
+                return;
+            }
+
+            document.getElementById('centuryResultsTitle').textContent = `Century View: ${selectedFeast} (${startYear} - ${startYear + 99})`;
+            const tableBody = document.getElementById('centuryTableBody');
+            tableBody.innerHTML = '';
+            
+            // Show loading or just process (100 iterations is fast enough for modern JS)
+            document.getElementById('centuryResultsContainer').classList.remove('hidden');
+
+            for (let i = 0; i < 100; i++) {
+                const year = startYear + i;
+                const feasts = getFeastsForYear(year);
+                const feastData = feasts.find(f => f.name === selectedFeast);
+
+                if (feastData) {
+                    const tr = document.createElement('tr');
+                    tr.className = i % 2 === 0 ? "bg-white hover:bg-gray-50" : "bg-gray-50 hover:bg-gray-100";
+                    
+                    let gDateStr = formatCenturyDate(feastData.dateObj);
+                    if (feastData.endDateObj) {
+                        gDateStr = `${formatCenturyDate(feastData.dateObj)} – ${formatCenturyDate(feastData.endDateObj)}`;
+                    }
+
+                    // Get Day of Week
+                    const dayOfWeek = feastData.dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+
+                    tr.innerHTML = `
+                        <td class="p-4 font-bold text-gray-800 border-b border-gray-200">${year}</td>
+                        <td class="p-4 font-mono text-blue-700 border-b border-gray-200">${gDateStr}</td>
+                        <td class="p-4 text-gray-600 border-b border-gray-200">${dayOfWeek}</td>
+                        <td class="p-4 italic text-gray-500 border-b border-gray-200">${feastData.bDate}</td>
+                    `;
+                    tableBody.appendChild(tr);
+                }
+            }
         }
     </script>
 </body>
