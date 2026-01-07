@@ -87,6 +87,9 @@
                     </label>
                     <div class="flex gap-4">
                         <input type="number" id="yearInput" oninput="calculateFeasts()" placeholder="e.g. 2025" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition">
+                        <button onclick="shareYearlyLink()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" title="Copy Link">
+                            🔗
+                        </button>
                     </div>
                 </div>
 
@@ -153,9 +156,14 @@
                         <input type="number" id="centuryStartYear" placeholder="e.g. 2000" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:border-blue-500">
                     </div>
                 </div>
-                <button onclick="calculateCentury()" class="w-full bg-blue-800 hover:bg-blue-900 text-white font-bold py-2 px-6 rounded focus:outline-none focus:shadow-outline transition duration-300 border border-blue-950">
-                    Generate Century List
-                </button>
+                <div class="flex gap-4">
+                    <button onclick="calculateCentury()" class="flex-grow bg-blue-800 hover:bg-blue-900 text-white font-bold py-2 px-6 rounded focus:outline-none focus:shadow-outline transition duration-300 border border-blue-950">
+                        Generate Century List
+                    </button>
+                    <button onclick="shareCenturyLink()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline border border-gray-400" title="Copy Link to this Search">
+                        🔗 Share
+                    </button>
+                </div>
             </div>
 
             <!-- Century Results -->
@@ -214,22 +222,63 @@
 
         // --- Init ---
         window.onload = function() {
+            const params = new URLSearchParams(window.location.search);
+
             // Default years to current year
             const currentYear = new Date().getFullYear();
-            document.getElementById('yearInput').value = currentYear;
-            document.getElementById('centuryStartYear').value = currentYear;
+            let initialYear = currentYear;
+            let initialStartYear = currentYear;
+
+            // Parse 'year' (Annual View)
+            if (params.has('year')) {
+                const y = parseInt(params.get('year'));
+                if (!isNaN(y)) {
+                    initialYear = y;
+                    // If start_year is not explicit, sync it
+                    if (!params.has('start_year')) {
+                        initialStartYear = y;
+                    }
+                }
+            }
+
+            // Parse 'start_year' (Century View)
+            if (params.has('start_year')) {
+                const sy = parseInt(params.get('start_year'));
+                if (!isNaN(sy)) initialStartYear = sy;
+            }
+
+            document.getElementById('yearInput').value = initialYear;
+            document.getElementById('centuryStartYear').value = initialStartYear;
 
             // Populate Dropdown
             const select = document.getElementById('centuryFeastSelect');
+            const paramFeast = params.get('feast'); // Get feast from URL if present
+
             FEAST_OPTS.forEach(f => {
                 const opt = document.createElement('option');
                 opt.value = f;
                 opt.textContent = f;
-                if (f.includes("Tabernacles")) opt.selected = true; // Default as requested
+
+                // Select if matches param, or default to Tabernacles
+                if (paramFeast && f === paramFeast) {
+                    opt.selected = true;
+                } else if (!paramFeast && f.includes("Tabernacles")) {
+                    opt.selected = true;
+                }
+
                 select.appendChild(opt);
             });
 
-            calculateFeasts();
+            // Decide Initial View
+            if (params.has('feast')) {
+                // If a feast is specified, assume Century View intent
+                switchTab('century');
+                calculateCentury();
+            } else {
+                // Default to Yearly
+                switchTab('yearly');
+                calculateFeasts();
+            }
         };
 
         // --- Tab Switching ---
@@ -413,6 +462,39 @@
                     tableBody.appendChild(tr);
                 }
             }
+        }
+
+        // --- Share Functions ---
+
+        function shareYearlyLink() {
+            const year = document.getElementById('yearInput').value;
+            const url = new URL(window.location.href);
+            url.searchParams.set('year', year);
+            url.searchParams.delete('start_year');
+            url.searchParams.delete('feast');
+
+            copyToClipboard(url.toString());
+        }
+
+        function shareCenturyLink() {
+            const startYear = document.getElementById('centuryStartYear').value;
+            const feast = document.getElementById('centuryFeastSelect').value;
+            const url = new URL(window.location.href);
+            url.searchParams.set('start_year', startYear);
+            url.searchParams.set('feast', feast);
+            // Optionally remove 'year' or sync it. Removing it keeps the URL cleaner for Century View.
+            url.searchParams.delete('year');
+
+            copyToClipboard(url.toString());
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert("Link copied to clipboard!");
+            }).catch((err) => {
+                console.error('Could not copy text: ', err);
+                prompt("Copy this link:", text);
+            });
         }
     </script>
 </body>
