@@ -108,15 +108,6 @@
                 <p class="text-xs text-gray-500 mt-2 text-center">Note: Date determination is <strong>always</strong> based on Jerusalem calculation. This toggle only affects displayed times.</p>
             </div>
 
-            <!-- Hidden Feasts Container -->
-            <div id="hiddenFeastsContainer" class="hidden max-w-xl mx-auto mb-4 bg-yellow-50 border border-yellow-200 rounded p-4 fade-in">
-                <div class="flex justify-between items-center mb-2">
-                    <h3 class="text-sm font-bold text-yellow-800">Hidden Feasts (Restorable)</h3>
-                    <button onclick="restoreAllFeasts()" class="text-xs text-blue-600 hover:text-blue-800 underline">Restore All</button>
-                </div>
-                <div id="hiddenFeastsList" class="flex flex-wrap gap-2"></div>
-            </div>
-
             <!-- Results Section -->
             <div id="resultsContainer" class="hidden">
                 <div class="bg-white rounded-lg shadow-xl overflow-hidden border border-gray-300">
@@ -142,6 +133,15 @@
                         </table>
                     </div>
                 </div>
+            </div>
+
+            <!-- Hidden Feasts Container -->
+            <div id="hiddenFeastsContainer" class="hidden max-w-xl mx-auto mt-8 mb-4 bg-yellow-50 border border-yellow-200 rounded p-4 fade-in">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="text-sm font-bold text-yellow-800">Hidden Feasts (Restorable)</h3>
+                    <button onclick="restoreAllFeasts()" class="text-xs text-blue-600 hover:text-blue-800 underline">Restore All</button>
+                </div>
+                <div id="hiddenFeastsList" class="flex flex-wrap gap-2"></div>
             </div>
         </div>
 
